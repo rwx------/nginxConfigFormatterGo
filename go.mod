@@ -1,4 +1,4 @@
-module p2g
+module nginxConfigFormatterGo
 
 go 1.14
 
