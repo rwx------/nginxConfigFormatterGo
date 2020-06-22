@@ -108,6 +108,85 @@ func main() {
 	app.Run(os.Args)
 }
 
+func (f *FormatArgs) formatConfigFile(configFilePath string) {
+	/*
+		1. 首先以正确的编码打开文件
+		2. 然后以正确的编码读取文件
+		3. 判断文件内容是否为空
+		4. 判断是否需要备份, 若要备份, 则进行备份(以原有的编码进行备份).
+			4.1 判断是否需要显示详细信息
+		5. 以utf8格式转码, 然后进行文件格式化
+			5.1 将格式化后的内容, 以原编码格式写入到文件.
+
+	*/
+
+	// 获取文件内容, 并转换为utf-8编码
+	fc := ReadAll(configFilePath)
+	if f.Charset != "utf-8" {
+		// 转换为utf8字符集
+		fc, _ = iconv.ConvertString(fc, f.Charset, "utf-8")
+	}
+
+	// 判断文件是否为空
+	if len(fc) == 0 {
+		fmt.Printf("%v是一个空文件", configFilePath)
+		return
+	}
+
+	// 此方法不用关心原来的字符集是什么, 复制的文件还是原来的字符集.
+	if f.Backup {
+		_, err := copyFile(configFilePath, configFilePath+"~")
+		if err != nil {
+			fmt.Println(err)
+			// 当出现备份错误的时候, 不再进行后面的真正格式化
+			return
+		}
+	}
+
+	// 具体执行配置文件格式化
+	fcNew, err := f.formatConfigContent(fc)
+	if err != nil {
+		fmt.Println(err)
+		// 当格式化出错时, 不再进行 格式化后的文件写入到文件
+		return
+	}
+
+	if f.Testing {
+		fmt.Println(fcNew)
+	} else {
+		// 进行编码格式转换
+		if f.Charset != "utf-8" {
+			fcNew, _ = iconv.ConvertString(fcNew, "utf-8", f.Charset)
+		}
+
+		// 写入新文件
+		err = writeNewConfig(configFilePath, fcNew)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+}
+
+// copyFile 复制文件
+func copyFile(dstName, srcName string) (writeen int64, err error) {
+	src, err := os.Open(dstName)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer src.Close()
+
+	dst, err := os.OpenFile(srcName, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer dst.Close()
+
+	return io.Copy(dst, src)
+}
+
 // checkCharset 检查是否为受支持的字符集
 func checkCharset(s string) bool {
 	charsetList := []string{"gbk", "gb18030", "windows-1252", "utf-8"}
@@ -264,66 +343,6 @@ func reverseInQuotesStatus(status bool) bool {
 	}
 
 	return true
-}
-
-func (f *FormatArgs) formatConfigFile(configFilePath string) {
-	/*
-		1. 首先以正确的编码打开文件
-		2. 然后以正确的编码读取文件
-		3. 判断文件内容是否为空
-		4. 判断是否需要备份, 若要备份, 则进行备份(以原有的编码进行备份).
-			4.1 判断是否需要显示详细信息
-		5. 以utf8格式转码, 然后进行文件格式化
-			5.1 将格式化后的内容, 以原编码格式写入到文件.
-
-	*/
-
-	// 获取文件内容, 并转换为utf-8编码
-	fc := ReadAll(configFilePath)
-	if f.Charset != "utf-8" {
-		// 转换为utf8字符集
-		fc, _ = iconv.ConvertString(fc, f.Charset, "utf-8")
-	}
-
-	// 判断文件是否为空
-	if len(fc) == 0 {
-		fmt.Printf("%v是一个空文件", configFilePath)
-		return
-	}
-
-	// 此方法不用关心原来的字符集是什么, 复制的文件还是原来的字符集.
-	if f.Backup {
-		_, err := CopyFile(configFilePath, configFilePath+"~")
-		if err != nil {
-			fmt.Println(err)
-			// 当出现备份错误的时候, 不再进行后面的真正格式化
-			return
-		}
-	}
-
-	// 具体执行配置文件格式化
-	fcNew, err := f.formatConfigContent(fc)
-	if err != nil {
-		fmt.Println(err)
-		// 当格式化出错时, 不再进行 格式化后的文件写入到文件
-		return
-	}
-
-	if f.Testing {
-		fmt.Println(fcNew)
-	} else {
-		// 进行编码格式转换
-		if f.Charset != "utf-8" {
-			fcNew, _ = iconv.ConvertString(fcNew, "utf-8", f.Charset)
-		}
-
-		// 写入新文件
-		err = writeNewConfig(configFilePath, fcNew)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
-
 }
 
 func (f *FormatArgs) formatConfigContent(fc string) (string, error) {
@@ -492,23 +511,4 @@ func stripLine(l string) string {
 func writeNewConfig(Path string, content string) error {
 	text := []byte(content)
 	return ioutil.WriteFile(Path, text, 0644)
-}
-
-// CopyFile 复制文件
-func CopyFile(dstName, srcName string) (writeen int64, err error) {
-	src, err := os.Open(dstName)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer src.Close()
-
-	dst, err := os.OpenFile(srcName, os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer dst.Close()
-
-	return io.Copy(dst, src)
 }
