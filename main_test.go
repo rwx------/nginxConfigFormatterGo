@@ -50,6 +50,26 @@ func TestAddNewLineString(t *testing.T) {
 		t.Error(`Result is not match the Target`)
 	}
 
+	s2 := "aa;"
+	t2 := "aa;"
+	r2 := addNewLineString(s2)
+	if r2 != t2 {
+		t.Errorf(`Source: %#v%v`, s2, "\n")
+		t.Errorf(`Target: %#v%v`, t2, "\n")
+		t.Errorf(`Result: %#v%v`, r2, "\n")
+		t.Error(`Result is not match the Target`)
+	}
+
+	s3 := `{rewrite "^(.*'\"[;]{2,+})$" /test.html;}`
+	t3 := " {\nrewrite \"^(.*'\\\"[;]{2,+})$\" /test.html;\n\n}\n"
+	r3 := addNewLineString(s3)
+	if r3 != t3 {
+		t.Errorf(`Source: %#v%v`, s3, "\n")
+		t.Errorf(`Target: %#v%v`, t3, "\n")
+		t.Errorf(`Result: %#v%v`, r3, "\n")
+		t.Error(`Result is not match the Target`)
+	}
+
 }
 
 func stringSliceEqual(a, b []string) bool {
