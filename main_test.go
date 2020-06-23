@@ -55,6 +55,45 @@ func TestAddNewLineString(t *testing.T) {
 
 }
 
+func TestApplyBracketTemplateTags(t *testing.T) {
+	s1 := `{ rewrite "^/a/([\d]{2,}).html" /b/$1; } # here have qutoes(")`
+	t1 := "{ rewrite \"^/a/([\\d]___TEMPLATE_OPENING_TAG___2,___TEMPLATE_CLOSING_TAG___).html\" /b/$1; } \n# here have qutoes(\")"
+	r1 := applyBracketTemplateTags(s1)
+	if r1 != t1 {
+		t.Error(testFailedMessageString(s1, t1, r1))
+	}
+
+	s2 := `{ rewrite '^/a/([\d]{2,}).html' /b/$1; } # here have qutoes(')`
+	t2 := "{ rewrite '^/a/([\\d]___TEMPLATE_OPENING_TAG___2,___TEMPLATE_CLOSING_TAG___).html' /b/$1; } \n# here have qutoes(')"
+	r2 := applyBracketTemplateTags(s2)
+	if r2 != t2 {
+		t.Error(testFailedMessageString(s2, t2, r2))
+	}
+
+	s3 := `{ rewrite "^/a/([\d]{2,}).html" /b/$1; } # here have qutoes(") { test1 }`
+	t3 := "{ rewrite \"^/a/([\\d]___TEMPLATE_OPENING_TAG___2,___TEMPLATE_CLOSING_TAG___).html\" /b/$1; } \n# here have qutoes(\") ___TEMPLATE_OPENING_TAG___ test1 ___TEMPLATE_CLOSING_TAG___"
+	r3 := applyBracketTemplateTags(s3)
+	if r3 != t3 {
+		t.Error(testFailedMessageString(s3, t3, r3))
+	}
+
+	s4 := `{ rewrite "^/a/([\d]{2,}).html" /b/$1; } # here have qutoes { test1 }`
+	t4 := "{ rewrite \"^/a/([\\d]___TEMPLATE_OPENING_TAG___2,___TEMPLATE_CLOSING_TAG___).html\" /b/$1; } \n# here have qutoes { test1 }"
+	r4 := applyBracketTemplateTags(s4)
+	if r4 != t4 {
+		t.Error(testFailedMessageString(s4, t4, r4))
+	}
+}
+
+func TestStripBracketTemplateTags(t *testing.T) {
+	s1 := "{ rewrite \"^/a/([\\d]___TEMPLATE_OPENING_TAG___2,___TEMPLATE_CLOSING_TAG___).html\" /b/$1; }"
+	t1 := `{ rewrite "^/a/([\d]{2,}).html" /b/$1; }`
+	r1 := stripBracketTemplateTags(s1)
+	if r1 != t1 {
+		t.Error(testFailedMessageString(s1, t1, r1))
+	}
+}
+
 func stringSliceEqual(a, b []string) bool {
 	if (a == nil) != (b == nil) {
 		return false
