@@ -76,7 +76,8 @@ func main() {
 
 	app.Action = func(c *cli.Context) error {
 
-		var f FormatArgs = FormatArgs{
+		// 赋值
+		var f = FormatArgs{
 			c.Int("space"),
 			c.String("charset"),
 			c.Bool("backup"),
@@ -92,7 +93,7 @@ func main() {
 
 		if c.NArg() > 0 {
 			for _, conf := range c.Args() {
-				// 防止传入的文件不存在
+				// 检查传入的文件是否存在
 				if IsFile(conf) {
 					// 进行格式化处理
 					f.formatConfigFile(conf)
@@ -133,7 +134,7 @@ func (f *FormatArgs) formatConfigFile(configFilePath string) {
 		return
 	}
 
-	// 此方法不用关心原来的字符集是什么, 复制的文件还是原来的字符集.
+	// 此方法不用关心原来的字符集是什么, 备份的文件还是原来的字符集.
 	if f.Backup {
 		_, err := copyFile(configFilePath, configFilePath+"~")
 		if err != nil {
@@ -207,7 +208,7 @@ func IsFile(path string) bool {
 	return !s.IsDir()
 }
 
-// ReadAll 读取到file中，再利用ioutil将file直接读取到[]byte中, 这是最优
+// ReadAll 读取到file中，再利用ioutil将file直接读取到[]byte中
 func ReadAll(filePth string) string {
 	f, err := os.Open(filePth)
 	if err != nil {
