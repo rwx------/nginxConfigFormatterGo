@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -94,6 +95,193 @@ func TestStripBracketTemplateTags(t *testing.T) {
 	}
 }
 
+func TestPerformIndentation(t *testing.T) {
+	s1 := []string{
+		"http {",
+		"server {",
+		"listen 80;",
+		"",
+		"# It's my domain:  liaoyongfu.com",
+		"server_name www.liaoyongfu.com;",
+		"",
+		"location /nginx_status {",
+		"stub_status on;",
+		"allow 127.0.0.1;",
+		"deny all;",
+		"}",
+		"}",
+		"}",
+	}
+	b1 := 4
+	t1 := []string{
+		"http {",
+		"    server {",
+		"        listen 80;",
+		"",
+		"        # It's my domain:  liaoyongfu.com",
+		"        server_name www.liaoyongfu.com;",
+		"",
+		"        location /nginx_status {",
+		"            stub_status on;",
+		"            allow 127.0.0.1;",
+		"            deny all;",
+		"        }",
+		"    }",
+		"}",
+	}
+	r1 := performIndentation(s1, b1)
+
+	if !stringSliceEqual(t1, r1) {
+		t.Error(testFailedMessageSlice(s1, t1, r1))
+	}
+
+	b2 := 2
+	t2 := []string{
+		"http {",
+		"  server {",
+		"    listen 80;",
+		"",
+		"    # It's my domain:  liaoyongfu.com",
+		"    server_name www.liaoyongfu.com;",
+		"",
+		"    location /nginx_status {",
+		"      stub_status on;",
+		"      allow 127.0.0.1;",
+		"      deny all;",
+		"    }",
+		"  }",
+		"}",
+	}
+	r2 := performIndentation(s1, b2)
+
+	if !stringSliceEqual(t2, r2) {
+		t.Error(testFailedMessageSlice(s1, t2, r2))
+	}
+}
+
+func TestJoinOpeningBracket(t *testing.T) {
+	s1 := []string{
+		"http {",
+		"server",
+		"",
+		"",
+		"{",
+		"",
+		"",
+		"listen 80;",
+		"",
+		"# It's my domain:  {liaoyongfu.com}",
+		"server_name www.liaoyongfu.com;",
+		"",
+		"location /nginx_status {",
+		"stub_status on;",
+		"allow 127.0.0.1;",
+		"deny all;",
+		"}",
+		"}",
+		"",
+		"",
+		"}",
+	}
+	t1 := []string{
+		"http {",
+		"server {",
+		"listen 80;",
+		"",
+		"# It's my domain:  {liaoyongfu.com}",
+		"server_name www.liaoyongfu.com;",
+		"",
+		"location /nginx_status {",
+		"stub_status on;",
+		"allow 127.0.0.1;",
+		"deny all;",
+		"}",
+		"}",
+		"}",
+	}
+
+	r1 := joinOpeningBracket(s1)
+
+	if !stringSliceEqual(t1, r1) {
+		t.Error(testFailedMessageSlice(s1, t1, r1))
+	}
+}
+
+func TestStripLine(t *testing.T) {
+	s1 := "   # lsdkfj' sldkfjl "
+	t1 := "# lsdkfj' sldkfjl"
+	r1 := stripLine(s1)
+
+	if r1 != t1 {
+		t.Error(testFailedMessageString(s1, t1, r1))
+	}
+
+	s2 := "   rewrite \"^/asd/d   sldk(.*)\"     /asd/lsdkfjl$1.html "
+	t2 := "rewrite \"^/asd/d   sldk(.*)\" /asd/lsdkfjl$1.html"
+	r2 := stripLine(s2)
+	if r2 != t2 {
+		t.Error(testFailedMessageString(s2, t2, r2))
+	}
+}
+
+func TestCleanLines(t *testing.T) {
+	s1 := []string{
+		"http {",
+		"server",
+		"",
+		"",
+		"{",
+		"",
+		"",
+		"listen 80;",
+		"",
+		"# location { allow all; }",
+		"location { allow all; } # It's my domain:  {liaoyongfu.com}",
+		"server_name www.liaoyongfu.com;",
+		"",
+		"location /nginx_status {stub_status on;allow 127.0.0.1;",
+		"deny all;}",
+		"",
+		"}}",
+	}
+	t1 := []string{
+		"http {",
+		"server",
+		"",
+		"",
+		"{",
+		"",
+		"",
+		"listen 80;",
+		"",
+		"# location { allow all; }",
+		"location {",
+		"allow all;",
+		"",
+		"}",
+		"",
+		"# It's my domain: ___TEMPLATE_OPENING_TAG___liaoyongfu.com___TEMPLATE_CLOSING_TAG___",
+		"server_name www.liaoyongfu.com;",
+		"",
+		"location /nginx_status {",
+		"stub_status on;",
+		"allow 127.0.0.1;",
+		"deny all;",
+		"",
+		"}",
+		"",
+		"",
+		"}",
+		"",
+		"}",
+		"",
+	}
+	r1 := cleanLines(s1)
+	if !stringSliceEqual(t1, r1) {
+		t.Error(testFailedMessageSlice(s1, t1, r1))
+	}
+}
+
 func stringSliceEqual(a, b []string) bool {
 	if (a == nil) != (b == nil) {
 		return false
@@ -104,7 +292,8 @@ func stringSliceEqual(a, b []string) bool {
 	}
 
 	for i := range a {
-		if a[i] != b[i] {
+		eq := strings.Compare(a[i], b[i])
+		if eq != 0 {
 			return false
 		}
 	}
