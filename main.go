@@ -15,10 +15,10 @@ import (
 
 /*
  to-do:
- 1. 日志记录
- 2. verbose模式完善
- 3. 测试用例编写
- 4. 注释和说明使用英文，新增readme.md文件
+ 1. readme.md 文件完善
+ 2. 注释和说明使用英文
+ 3. 编译二进制作为release包
+ 4. 发布v1.0.0版本
 */
 
 // TemplateOpeningTag 替换正文里的 {
@@ -39,11 +39,11 @@ type FormatArgs struct {
 func main() {
 	app := cli.NewApp()
 	app.EnableBashCompletion = true
-	app.Name = "doit-ngxformatter"
+	app.Name = "nginxConfigFormatterGo"
 	app.Usage = "Nginx配置文件格式化工具"
 	app.Author = "yongfu"
 	app.Description = "Nginx配置文件格式化工具"
-	app.UsageText = "./doit-ngxformatter [-b 2]"
+	app.UsageText = "./nginxConfigFormatterGo [-s 2] [-c utf-8] [-b] [-v] [-t] <filelists>"
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -87,7 +87,9 @@ func main() {
 
 		// 检查字符集
 		if !checkCharset(f.Charset) {
-			fmt.Printf("不支持的字符集!\n 终止配置文件的格式化!\n")
+			s := "不支持的字符集! 当前只支持: \"gbk\", \"gb18030\", \"windows-1252\", \"utf-8\"\n"
+			s += "将终止配置文件的格式化!\n"
+			errorMessage(s, true)
 			return nil
 		}
 
@@ -98,11 +100,13 @@ func main() {
 					// 进行格式化处理
 					f.formatConfigFile(conf)
 				} else {
-					fmt.Printf("文件不存在: %v\n", conf)
+					s := "需要传入一个文件, 文件: \"" + conf + "\" 不是一个文件!\n"
+					errorMessage(s, true)
 				}
 			}
 		} else {
-			fmt.Printf("没有传对应的参数\n")
+			s := "需要传入文件\n"
+			errorMessage(s, true)
 		}
 		return nil
 	}
@@ -125,12 +129,19 @@ func (f *FormatArgs) formatConfigFile(configFilePath string) {
 	fc := ReadAll(configFilePath)
 	if f.Charset != "utf-8" {
 		// 转换为utf8字符集
-		fc, _ = iconv.ConvertString(fc, f.Charset, "utf-8")
+		fcIconv, err := iconv.ConvertString(fc, f.Charset, "utf-8")
+		if err != nil {
+			s := fmt.Sprintf("You want convert the strings from %v to utf-8, but could not convert!", f.Charset)
+			errorMessage(s, false)
+			return
+		}
+		fc = fcIconv
 	}
 
 	// 判断文件是否为空
 	if len(fc) == 0 {
-		fmt.Printf("%v是一个空文件", configFilePath)
+		s := fmt.Sprintf("%v是一个空文件\n", configFilePath)
+		errorMessage(s, false)
 		return
 	}
 
@@ -138,19 +149,15 @@ func (f *FormatArgs) formatConfigFile(configFilePath string) {
 	if f.Backup {
 		_, err := copyFile(configFilePath, configFilePath+"~")
 		if err != nil {
-			fmt.Println(err)
+			s := fmt.Sprintf("%v 备份失败\n, \n%v", configFilePath, err)
+			errorMessage(s, false)
 			// 当出现备份错误的时候, 不再进行后面的真正格式化
 			return
 		}
 	}
 
 	// 具体执行配置文件格式化
-	fcNew, err := f.formatConfigContent(fc)
-	if err != nil {
-		fmt.Println(err)
-		// 当格式化出错时, 不再进行 格式化后的文件写入到文件
-		return
-	}
+	fcNew := f.formatConfigContent(fc)
 
 	if f.Testing {
 		fmt.Println(fcNew)
@@ -161,12 +168,12 @@ func (f *FormatArgs) formatConfigFile(configFilePath string) {
 		}
 
 		// 写入新文件
-		err = writeNewConfig(configFilePath, fcNew)
+		err := writeNewConfig(configFilePath, fcNew)
 		if err != nil {
-			fmt.Println(err)
+			s := fmt.Sprintf("%v 写入新文件失败\n, \n%v", configFilePath, err)
+			errorMessage(s, false)
 		}
 	}
-
 }
 
 // copyFile 复制文件
@@ -346,7 +353,7 @@ func reverseInQuotesStatus(status bool) bool {
 	return true
 }
 
-func (f *FormatArgs) formatConfigContent(fc string) (string, error) {
+func (f *FormatArgs) formatConfigContent(fc string) string {
 	/*
 		1. 将引号内的 {} 进行替换
 		2. 将内容分割为行(\n)
@@ -390,7 +397,7 @@ func (f *FormatArgs) formatConfigContent(fc string) (string, error) {
 		fmt.Printf("\n==stripBracketTemplateTags:===\n%#v\n=======\n", text)
 	}
 
-	return text, nil
+	return text
 }
 
 func stripBracketTemplateTags(content string) string {
@@ -512,4 +519,14 @@ func stripLine(l string) string {
 func writeNewConfig(Path string, content string) error {
 	text := []byte(content)
 	return ioutil.WriteFile(Path, text, 0644)
+}
+
+func errorMessage(s string, b bool) {
+
+	if b == true {
+		usageText := "./nginxConfigFormatterGo [-s 2] [-c utf-8] [-b] [-v] [-t] <filelists>"
+		s += "\n[usage]:\n" + usageText + "\n"
+	}
+
+	fmt.Printf("\n[error]:\n%v", s)
 }
