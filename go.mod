@@ -1,4 +1,4 @@
-module nginxConfigFormatterGo
+module github.com/rwx------/nginxConfigFormatterGo
 
 go 1.14
 
