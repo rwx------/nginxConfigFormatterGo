@@ -15,10 +15,9 @@ import (
 
 /*
  to-do:
- 1. readme.md 文件完善
- 2. 注释和说明使用英文
- 3. 编译二进制作为release包
- 4. 发布v1.0.0版本
+ 1. 注释和说明使用英文
+ 2. 发布v1.0.0版本
+ 3. whitespaces in line with the single quotation marks and escaped quotation marks(\" \')
 */
 
 // TemplateOpeningTag 替换正文里的 {
@@ -40,9 +39,9 @@ func main() {
 	app := cli.NewApp()
 	app.EnableBashCompletion = true
 	app.Name = "nginxConfigFormatterGo"
-	app.Usage = "Nginx配置文件格式化工具"
-	app.Author = "yongfu"
-	app.Description = "Nginx配置文件格式化工具"
+	app.Usage = "Nginx config file formatter"
+	app.Author = "github.com/rwx------"
+	app.Description = "Nginx config file formatter"
 	app.UsageText = "./nginxConfigFormatterGo [-s 2] [-c utf-8] [-b] [-v] [-t] <filelists>"
 
 	app.Flags = []cli.Flag{
@@ -50,27 +49,27 @@ func main() {
 			Name:     "charset, c",
 			Value:    "utf-8",
 			Required: false,
-			Usage:    "当前支持字符集: gbk, gb18030, windows-1252, utf-8",
+			Usage:    "current supported charset: gbk, gb18030, windows-1252, utf-8",
 		},
 		cli.IntFlag{
 			Name:  "space, s",
 			Value: 4,
-			Usage: "缩进的空格数, 默认缩进4个空格",
+			Usage: "blank spaces indentation",
 		},
 		cli.BoolFlag{
 			Name:     "backup, b",
 			Required: false,
-			Usage:    "是否备份, 默认为false, 若需要备份请传参 -b",
+			Usage:    "backup the original config file",
 		},
 		cli.BoolFlag{
 			Name:     "verbose, v",
 			Required: false,
-			Usage:    "是否显示详细信息, 默认不显示详细信息",
+			Usage:    "verbose mode",
 		},
 		cli.BoolFlag{
 			Name:     "testing, t",
 			Required: false,
-			Usage:    "测试模式, 并不会真正修改文件, 只会在终端打印格式化的配置内容",
+			Usage:    "perform a test run with no changes made and show the formatted contents on the standard output",
 		},
 	}
 
