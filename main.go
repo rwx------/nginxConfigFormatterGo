@@ -70,7 +70,7 @@ func main() {
 		cli.BoolFlag{
 			Name:     "testing, t",
 			Required: false,
-			Usage:    "perform a test run with no changes made and show the formatted contents on the standard output",
+			Usage:    "perform a test run with no changes made." + "\n                              show the formatted contents on the standard output.",
 		},
 	}
 
