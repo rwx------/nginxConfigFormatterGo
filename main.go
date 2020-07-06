@@ -18,6 +18,7 @@ import (
  1. 注释和说明使用英文
  2. 发布v1.0.0版本
  3. whitespaces in line with the single quotation marks and escaped quotation marks(\" \')
+ 4. chinese readme_zh.md file
 */
 
 // TemplateOpeningTag 替换正文里的 {
