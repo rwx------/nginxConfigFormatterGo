@@ -55,6 +55,7 @@ GLOBAL OPTIONS:
    --space value, -s value    blank spaces indentation (default: 4)
    --backup, -b               backup the original config file
    --verbose, -v              verbose mode
-   --testing, -t              perform a test run with no changes made and show the formatted contents on the standard output
-   --help, -h                 show this help
+   --testing, -t              perform a test run with no changes made.
+                              show the formatted contents on the standard output.
+   --help, -h  show help
 ```
