@@ -7,8 +7,8 @@ import (
 )
 
 func TestDecomposeLine(t *testing.T) {
-	s1 := "aa; lskdfjl; "
-	t1 := []string{"aa;", " lskdfjl;", " "}
+	s1 := "aa;\n lskdfjl;\n # aa"
+	t1 := []string{"aa;", " lskdfjl;", " # aa"}
 	r1, f1 := decomposeLine(s1)
 	if f1 != true || !stringSliceEqual(r1, t1) {
 		t.Error(testFailedMessageBool(false, true, f1))
@@ -23,8 +23,8 @@ func TestDecomposeLine(t *testing.T) {
 		t.Error(testFailedMessageString2Slice(s2, t2, r2))
 	}
 
-	s3 := `{rewrite "^(.*\'\"[;]{2,+})$" /test.html;}`
-	t3 := []string{` {`, `rewrite "^(.*\'\"[;]{2,+})$" /test.html;`, ``, `}`, ``}
+	s3 := "{\nrewrite \"^(.*[;]{2,+})$\" /test.html;\n\n}\n"
+	t3 := []string{`{`, `rewrite "^(.*[;]{2,+})$" /test.html;`, ``, `}`, ``}
 	r3, f3 := decomposeLine(s3)
 	if f3 != true || !stringSliceEqual(r3, t3) {
 		t.Error(testFailedMessageBool(false, true, f3))
@@ -32,55 +32,31 @@ func TestDecomposeLine(t *testing.T) {
 	}
 }
 
-func TestAddNewLineString(t *testing.T) {
-	s1 := "aa; lskdfjl; "
-	t1 := "aa;\n lskdfjl;\n "
-	r1 := addNewLineString(s1)
-	if r1 != t1 {
-		t.Error(testFailedMessageString(s1, t1, r1))
-	}
-
-	s2 := "aa;"
-	t2 := "aa;"
-	r2 := addNewLineString(s2)
-	if r2 != t2 {
-		t.Error(testFailedMessageString(s2, t2, r2))
-	}
-
-	s3 := `{rewrite "^(.*'\"[;]{2,+})$" /test.html;}`
-	t3 := " {\nrewrite \"^(.*'\\\"[;]{2,+})$\" /test.html;\n\n}\n"
-	r3 := addNewLineString(s3)
-	if r3 != t3 {
-		t.Error(testFailedMessageString(s3, t3, r3))
-	}
-
-}
-
-func TestApplyBracketTemplateTags(t *testing.T) {
+func TestCheackEveryChar(t *testing.T) {
 	s1 := `{ rewrite "^/a/([\d]{2,}).html" /b/$1; } # here have qutoes(")`
-	t1 := "{ rewrite \"^/a/([\\d]___TEMPLATE_OPENING_TAG___2,___TEMPLATE_CLOSING_TAG___).html\" /b/$1; } \n# here have qutoes(\")"
-	r1 := applyBracketTemplateTags(s1)
+	t1 := " {\n rewrite \"^/a/([\\d]___TEMPLATE_OPENING_TAG___2,___TEMPLATE_CLOSING_TAG___).html\" /b/$1;\n \n}\n \n# here have qutoes(\")"
+	r1 := cheackEveryChar(s1)
 	if r1 != t1 {
 		t.Error(testFailedMessageString(s1, t1, r1))
 	}
 
 	s2 := `{ rewrite '^/a/([\d]{2,}).html' /b/$1; } # here have qutoes(')`
-	t2 := "{ rewrite '^/a/([\\d]___TEMPLATE_OPENING_TAG___2,___TEMPLATE_CLOSING_TAG___).html' /b/$1; } \n# here have qutoes(')"
-	r2 := applyBracketTemplateTags(s2)
+	t2 := " {\n rewrite '^/a/([\\d]___TEMPLATE_OPENING_TAG___2,___TEMPLATE_CLOSING_TAG___).html' /b/$1;\n \n}\n \n# here have qutoes(')"
+	r2 := cheackEveryChar(s2)
 	if r2 != t2 {
 		t.Error(testFailedMessageString(s2, t2, r2))
 	}
 
 	s3 := `{ rewrite "^/a/([\d]{2,}).html" /b/$1; } # here have qutoes(") { test1 }`
-	t3 := "{ rewrite \"^/a/([\\d]___TEMPLATE_OPENING_TAG___2,___TEMPLATE_CLOSING_TAG___).html\" /b/$1; } \n# here have qutoes(\") ___TEMPLATE_OPENING_TAG___ test1 ___TEMPLATE_CLOSING_TAG___"
-	r3 := applyBracketTemplateTags(s3)
+	t3 := " {\n rewrite \"^/a/([\\d]___TEMPLATE_OPENING_TAG___2,___TEMPLATE_CLOSING_TAG___).html\" /b/$1;\n \n}\n \n# here have qutoes(\") { test1 }"
+	r3 := cheackEveryChar(s3)
 	if r3 != t3 {
 		t.Error(testFailedMessageString(s3, t3, r3))
 	}
 
-	s4 := `{ rewrite "^/a/([\d]{2,}).html" /b/$1; } # here have qutoes { test1 }`
-	t4 := "{ rewrite \"^/a/([\\d]___TEMPLATE_OPENING_TAG___2,___TEMPLATE_CLOSING_TAG___).html\" /b/$1; } \n# here have qutoes { test1 }"
-	r4 := applyBracketTemplateTags(s4)
+	s4 := `{ rewrite "^/a/([\d]{2,}).html" /b/$1; } # here no qutoes { test1 }`
+	t4 := " {\n rewrite \"^/a/([\\d]___TEMPLATE_OPENING_TAG___2,___TEMPLATE_CLOSING_TAG___).html\" /b/$1;\n \n}\n \n# here no qutoes { test1 }"
+	r4 := cheackEveryChar(s4)
 	if r4 != t4 {
 		t.Error(testFailedMessageString(s4, t4, r4))
 	}
@@ -207,23 +183,6 @@ func TestJoinOpeningBracket(t *testing.T) {
 	}
 }
 
-func TestStripLine(t *testing.T) {
-	s1 := "   # lsdkfj' sldkfjl "
-	t1 := "# lsdkfj' sldkfjl"
-	r1 := stripLine(s1)
-
-	if r1 != t1 {
-		t.Error(testFailedMessageString(s1, t1, r1))
-	}
-
-	s2 := "   rewrite \"^/asd/d   sldk(.*)\"     /asd/lsdkfjl$1.html "
-	t2 := "rewrite \"^/asd/d   sldk(.*)\" /asd/lsdkfjl$1.html"
-	r2 := stripLine(s2)
-	if r2 != t2 {
-		t.Error(testFailedMessageString(s2, t2, r2))
-	}
-}
-
 func TestCleanLines(t *testing.T) {
 	s1 := []string{
 		"http {",
@@ -255,15 +214,15 @@ func TestCleanLines(t *testing.T) {
 		"listen 80;",
 		"",
 		"# location { allow all; }",
-		"location {",
+		"location  {",
 		"allow all;",
 		"",
 		"}",
 		"",
-		"# It's my domain: ___TEMPLATE_OPENING_TAG___liaoyongfu.com___TEMPLATE_CLOSING_TAG___",
+		"# It's my domain:  {liaoyongfu.com}",
 		"server_name www.liaoyongfu.com;",
 		"",
-		"location /nginx_status {",
+		"location /nginx_status  {",
 		"stub_status on;",
 		"allow 127.0.0.1;",
 		"deny all;",

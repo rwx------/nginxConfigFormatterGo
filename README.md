@@ -1,9 +1,11 @@
 # nginxConfigFormatterGo
+
 go for nginx configure file formatter, a better beautiful nginx config formatter.
 
-Inspired by https://github.com/1connect/nginx-config-formatter.git
+Inspired by <https://github.com/1connect/nginx-config-formatter.git>
 
 ## Goals and Features
+
 - predictable formatted result.
 - Comments on a separate line.
 - neighbouring empty lines are collapsed to one empty line.
@@ -12,29 +14,35 @@ Inspired by https://github.com/1connect/nginx-config-formatter.git
 - whitespaces are collapsed, except in comments an quotation marks.
 
 ## Build Requirements
+
 go 1.14.4+ (or go 1.13.12+)
 
 ## Installation
+
 ### 1. go get
-```
+
+```shell
 go get github.com/rwx------/nginxConfigFormatterGo
 
 # It may be installed at this path
-$HOME/go/bin/nginxConfigFormatterGo 
+$HOME/go/bin/nginxConfigFormatterGo
 ```
 
 ### 2. go build
-```
+
+```shell
 git clone https://github.com/rwx------/nginxConfigFormatterGo.git
 cd nginxConfigFormatterGo
 go build
 ```
 
 ### 3. prebuild binary releases
+
 You can get download prebuild binary at [Release Page](https://github.com/rwx------/nginxConfigFormatterGo/releases).
 
 ## Usage
-```
+
+```code
 NAME:
    nginxConfigFormatterGo - Nginx config file formatter
 

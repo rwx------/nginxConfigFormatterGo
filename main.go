@@ -5,8 +5,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"regexp"
 	"strings"
+	"unicode"
 
 	iconv "github.com/djimenez/iconv-go"
 	"github.com/urfave/cli"
@@ -17,8 +17,7 @@ import (
  to-do:
  1. 注释和说明使用英文
  2. 发布v1.0.0版本
- 3. whitespaces in line with the single quotation marks and escaped quotation marks(\" \')
- 4. chinese readme_zh.md file
+ 3. chinese readme_zh.md file
 */
 
 // TemplateOpeningTag 替换正文里的 {
@@ -237,120 +236,83 @@ func ReadAll(filePth string) string {
 // 返回值 []string  分解后的行slice
 // 返回值 bool 是否有分解发生
 func decomposeLine(line string) (ls []string, mFlag bool) {
-	/*
-		2. 碰到多于一个分号(;)时, 需要分行, 但是引号内的分号(;)不能计算
-		3.  {} 的分解
-	*/
 	mFlag = false
-	ml := strings.Split(line, "\n")
+	ls = strings.Split(line, "\n")
 
-	// 左边的数据处理
-	leftL := addNewLineString(ml[0])
-	leftLs := strings.Split(leftL, "\n")
-	if len(leftLs) > 1 {
+	if len(ls) > 1 {
 		mFlag = true
-	}
-
-	ls = append(ls, leftLs...)
-
-	if len(ml) > 1 {
-		mFlag = true
-		// 右边的剩下的slice  #及后面的内容
-		rightLs := ml[1:]
-		ls = append(ls, rightLs...)
 	}
 
 	return
-
 }
 
-func addNewLineString(content string) string {
+func cheackEveryChar(line string) string {
+	var inQuotes = false
+	var commentFlag = false
 	var result string
-	inQuotes := false
 	var lastC rune
 	var lastQuote rune
 
 	var c []rune
-	c = []rune(content)
+	c = []rune(line)
 	cLen := len(c) - 1
 	for i, k := range c {
-		// 判断当前字符为引号,并且是非转义的引号  防止 "aa'bb" 这种情况的错误判断
-		if (k == '"' || k == '\'') && lastC != '\\' {
-			if k != lastQuote && lastQuote == 0 {
-				inQuotes = true
-				lastQuote = k
-			} else if k == lastQuote && lastQuote != 0 {
-				inQuotes = false
-				lastQuote = 0
-			}
-		}
-		if inQuotes == true {
+		if commentFlag == true { // content after `#`
 			result += string(k)
-		} else {
-			if k == ';' && i != cLen {
-				result += ";\n"
-			} else if k == '{' && i != cLen {
-				result += " {\n"
-			} else if k == '}' && i != 0 {
-				result += "\n}\n"
-			} else if k == '}' && i == 0 {
-				result += "}\n"
-			} else {
-				result += string(k)
-			}
-		}
+		} else { // content before `#`
 
-		lastC = k
+			// whether inQuotes
+			if (k == '"' || k == '\'') && lastC != '\\' {
+				if k != lastQuote && lastQuote == 0 {
+					inQuotes = true
+					lastQuote = k
+				} else if k == lastQuote && lastQuote != 0 {
+					inQuotes = false
+					lastQuote = 0
+				}
+			}
+
+			if inQuotes == true {
+				if k == '{' {
+					result += TemplateOpeningTag
+				} else if k == '}' {
+					result += TemplateClosingTag
+				} else {
+					result += string(k)
+				}
+			} else {
+				if k == '#' {
+					result += "\n#"
+					commentFlag = true
+				} else {
+					// `;`, `{`, `}` turn into a newline
+					if k == ';' && i != cLen {
+						result += ";\n"
+					} else if k == '{' && i != cLen {
+						result += " {\n"
+					} else if k == '}' && i != 0 {
+						result += "\n}\n"
+					} else if k == '}' && i == 0 {
+						result += "}\n"
+					} else {
+						// whitespaces are collapsed
+						if unicode.IsSpace(k) && lastC != ' ' {
+							lastC = ' '
+							result += " "
+							continue
+						} else if unicode.IsSpace(k) && lastC == ' ' {
+							lastC = ' '
+							continue
+						} else {
+							result += string(k)
+						}
+					}
+				}
+			}
+			lastC = k
+		}
 	}
 	return result
-}
-
-func applyBracketTemplateTags(contents string) string {
-	var result string
-	inQuotes := false
-	var lastC rune
-	var lastQuote rune
-
-	var c []rune
-	c = []rune(contents)
-	for _, k := range c {
-		// 判断当前字符为引号,并且是非转义的引号  防止 "aa'bb" 这种情况的错误判断
-		if (k == '"' || k == '\'') && lastC != '\\' {
-			if k != lastQuote && lastQuote == 0 {
-				inQuotes = true
-				lastQuote = k
-			} else if k == lastQuote && lastQuote != 0 {
-				inQuotes = false
-				lastQuote = 0
-			}
-		}
-		if inQuotes == true {
-			if k == '{' {
-				result += TemplateOpeningTag
-			} else if k == '}' {
-				result += TemplateClosingTag
-			} else {
-				result += string(k)
-			}
-		} else {
-			if k == '#' {
-				result += "\n#"
-			} else {
-				result += string(k)
-			}
-		}
-
-		lastC = k
-	}
-	return result
-}
-
-func reverseInQuotesStatus(status bool) bool {
-	if status == true {
-		return false
-	}
-
-	return true
 }
 
 func (f *FormatArgs) formatConfigContent(fc string) string {
@@ -464,13 +426,13 @@ func joinOpeningBracket(lines []string) []string {
 func cleanLines(lines []string) []string {
 	cleanedLines := make([]string, 0, cap(lines))
 	for _, l := range lines {
-		l = stripLine(l)
+		l = strings.TrimSpace(l)
 		if l == "" {
 			cleanedLines = append(cleanedLines, l)
 		} else if strings.HasPrefix(l, "#") {
 			cleanedLines = append(cleanedLines, l)
 		} else {
-			l = applyBracketTemplateTags(l)
+			l = cheackEveryChar(l)
 			newLines, ok := decomposeLine(l)
 
 			if ok {
@@ -488,32 +450,10 @@ func cleanLines(lines []string) []string {
 func cleanAgain(lines []string) []string {
 	cleanedLines := make([]string, 0, cap(lines))
 	for _, l := range lines {
-		l = stripLine(l)
+		l = strings.TrimSpace(l)
 		cleanedLines = append(cleanedLines, l)
 	}
 	return cleanedLines
-}
-
-func stripLine(l string) string {
-	l = strings.TrimSpace(l)
-	if strings.HasPrefix(l, "#") {
-		return l
-	}
-
-	nl := make([]string, 0, 0)
-	withInQuotes := false
-	re := regexp.MustCompile(`[\s]+`)
-	parts := strings.Split(l, "\"")
-	for _, part := range parts {
-		if withInQuotes {
-			nl = append(nl, part)
-		} else {
-			nl = append(nl, re.ReplaceAllString(part, " "))
-		}
-		withInQuotes = reverseInQuotesStatus(withInQuotes)
-	}
-	line := strings.Join(nl, "\"")
-	return line
 }
 
 func writeNewConfig(Path string, content string) error {
