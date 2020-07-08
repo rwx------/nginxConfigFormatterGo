@@ -301,7 +301,6 @@ func cheackEveryChar(line string) string {
 							result += " "
 							continue
 						} else if unicode.IsSpace(k) && lastC == ' ' {
-							lastC = ' '
 							continue
 						} else {
 							result += string(k)
