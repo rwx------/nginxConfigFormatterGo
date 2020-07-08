@@ -11,7 +11,7 @@ Inspired by <https://github.com/1connect/nginx-config-formatter.git>
 - neighbouring empty lines are collapsed to one empty line.
 - curly braces placement follows Java convention.
 - all lines are indented in uniform manner, with the given number spaces level (default 4).
-- whitespaces are collapsed, except in comments an quotation marks.
+- whitespaces are collapsed, except in comments and quotation marks.
 
 ## Build Requirements
 
@@ -63,7 +63,6 @@ GLOBAL OPTIONS:
    --space value, -s value    blank spaces indentation (default: 4)
    --backup, -b               backup the original config file
    --verbose, -v              verbose mode
-   --testing, -t              perform a test run with no changes made.
-                              show the formatted contents on the standard output.
-   --help, -h  show help
+   --testing, -t              perform a test run with no changes made
+   --help, -h                 show help
 ```

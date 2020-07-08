@@ -13,20 +13,13 @@ import (
 	"github.com/wxnacy/wgo/arrays"
 )
 
-/*
- to-do:
- 1. 注释和说明使用英文
- 2. 发布v1.0.0版本
- 3. chinese readme_zh.md file
-*/
+// TemplateOpeningTag  change { to this const
+const TemplateOpeningTag = "___TEMPLATE_OPENING_TAG___"
 
-// TemplateOpeningTag 替换正文里的 {
-var TemplateOpeningTag = "___TEMPLATE_OPENING_TAG___"
+// TemplateClosingTag  change } to this const
+const TemplateClosingTag = "___TEMPLATE_CLOSING_TAG___"
 
-// TemplateClosingTag 替换正文里的 }
-var TemplateClosingTag = "___TEMPLATE_CLOSING_TAG___"
-
-// FormatArgs 命令行的参数
+// FormatArgs args
 type FormatArgs struct {
 	BlankSpace int
 	Charset    string
@@ -69,13 +62,11 @@ func main() {
 		cli.BoolFlag{
 			Name:     "testing, t",
 			Required: false,
-			Usage:    "perform a test run with no changes made." + "\n                              show the formatted contents on the standard output.",
+			Usage:    "perform a test run with no changes made",
 		},
 	}
 
 	app.Action = func(c *cli.Context) error {
-
-		// 赋值
 		var f = FormatArgs{
 			c.Int("space"),
 			c.String("charset"),
@@ -84,27 +75,25 @@ func main() {
 			c.Bool("testing"),
 		}
 
-		// 检查字符集
+		// check charset
 		if !checkCharset(f.Charset) {
-			s := "不支持的字符集! 当前只支持: \"gbk\", \"gb18030\", \"windows-1252\", \"utf-8\"\n"
-			s += "将终止配置文件的格式化!\n"
+			s := `Do not support the charst!` + "\n"
+			s += `We now support this charsets:"gbk", "gb18030", "windows-1252", "utf-8"` + "\n"
 			errorMessage(s, true)
 			return nil
 		}
 
 		if c.NArg() > 0 {
 			for _, conf := range c.Args() {
-				// 检查传入的文件是否存在
-				if IsFile(conf) {
-					// 进行格式化处理
+				if isFile(conf) {
 					f.formatConfigFile(conf)
 				} else {
-					s := "需要传入一个文件, 文件: \"" + conf + "\" 不是一个文件!\n"
+					s := "You should give a filename to the programe to format.\n"
 					errorMessage(s, true)
 				}
 			}
 		} else {
-			s := "需要传入文件\n"
+			s := "You should give a filename to the programe to format.\n"
 			errorMessage(s, true)
 		}
 		return nil
@@ -113,21 +102,10 @@ func main() {
 }
 
 func (f *FormatArgs) formatConfigFile(configFilePath string) {
-	/*
-		1. 首先以正确的编码打开文件
-		2. 然后以正确的编码读取文件
-		3. 判断文件内容是否为空
-		4. 判断是否需要备份, 若要备份, 则进行备份(以原有的编码进行备份).
-			4.1 判断是否需要显示详细信息
-		5. 以utf8格式转码, 然后进行文件格式化
-			5.1 将格式化后的内容, 以原编码格式写入到文件.
 
-	*/
-
-	// 获取文件内容, 并转换为utf-8编码
-	fc := ReadAll(configFilePath)
+	fc := readAll(configFilePath)
 	if f.Charset != "utf-8" {
-		// 转换为utf8字符集
+		// convert the content to utf-8
 		fcIconv, err := iconv.ConvertString(fc, f.Charset, "utf-8")
 		if err != nil {
 			s := fmt.Sprintf("You want convert the strings from %v to utf-8, but could not convert!", f.Charset)
@@ -137,45 +115,43 @@ func (f *FormatArgs) formatConfigFile(configFilePath string) {
 		fc = fcIconv
 	}
 
-	// 判断文件是否为空
+	// if the file is empty
 	if len(fc) == 0 {
-		s := fmt.Sprintf("%v是一个空文件\n", configFilePath)
+		s := fmt.Sprintf("%v is an empty file.\n", configFilePath)
 		errorMessage(s, false)
 		return
 	}
 
-	// 此方法不用关心原来的字符集是什么, 备份的文件还是原来的字符集.
 	if f.Backup {
 		_, err := copyFile(configFilePath, configFilePath+"~")
 		if err != nil {
-			s := fmt.Sprintf("%v 备份失败\n, \n%v", configFilePath, err)
+			s := fmt.Sprintf("%v backup failed\n, \n%v", configFilePath, err)
 			errorMessage(s, false)
-			// 当出现备份错误的时候, 不再进行后面的真正格式化
+			// if backup failed, then no further format would do.
 			return
 		}
 	}
 
-	// 具体执行配置文件格式化
+	// formating
 	fcNew := f.formatConfigContent(fc)
 
 	if f.Testing {
 		fmt.Println(fcNew)
 	} else {
-		// 进行编码格式转换
+		// change the charset back
 		if f.Charset != "utf-8" {
 			fcNew, _ = iconv.ConvertString(fcNew, "utf-8", f.Charset)
 		}
 
-		// 写入新文件
+		// formated content write into the file
 		err := writeNewConfig(configFilePath, fcNew)
 		if err != nil {
-			s := fmt.Sprintf("%v 写入新文件失败\n, \n%v", configFilePath, err)
+			s := fmt.Sprintf("%v formated content wrote error\n, \n%v", configFilePath, err)
 			errorMessage(s, false)
 		}
 	}
 }
 
-// copyFile 复制文件
 func copyFile(dstName, srcName string) (writeen int64, err error) {
 	src, err := os.Open(dstName)
 	if err != nil {
@@ -194,7 +170,7 @@ func copyFile(dstName, srcName string) (writeen int64, err error) {
 	return io.Copy(dst, src)
 }
 
-// checkCharset 检查是否为受支持的字符集
+// checkCharset check the charset parameter
 func checkCharset(s string) bool {
 	charsetList := []string{"gbk", "gb18030", "windows-1252", "utf-8"}
 	i := arrays.ContainsString(charsetList, s)
@@ -204,8 +180,7 @@ func checkCharset(s string) bool {
 	return true
 }
 
-// IsFile 判断所给路径是否为文件
-func IsFile(path string) bool {
+func isFile(path string) bool {
 	s, err := os.Stat(path)
 	if err != nil {
 		return false
@@ -214,8 +189,7 @@ func IsFile(path string) bool {
 	return !s.IsDir()
 }
 
-// ReadAll 读取到file中，再利用ioutil将file直接读取到[]byte中
-func ReadAll(filePth string) string {
+func readAll(filePth string) string {
 	f, err := os.Open(filePth)
 	if err != nil {
 		fmt.Println("read file fail", err)
@@ -232,9 +206,7 @@ func ReadAll(filePth string) string {
 	return string(fd)
 }
 
-// decomposeLine 分解一行的内容
-// 返回值 []string  分解后的行slice
-// 返回值 bool 是否有分解发生
+// decomposeLine decompose one line
 func decomposeLine(line string) (ls []string, mFlag bool) {
 	mFlag = false
 	ls = strings.Split(line, "\n")
@@ -315,19 +287,7 @@ func cheackEveryChar(line string) string {
 }
 
 func (f *FormatArgs) formatConfigContent(fc string) string {
-	/*
-		1. 将引号内的 {} 进行替换
-		2. 将内容分割为行(\n)
-		3. 按行给每行进行处理
-		4. 处理行中的 '{' (opening bracket)
-		5. 处理缩进情况
-		6. 合并行
-		7. 将括号的替换进行替换回来.
-		8. 清理多余的空行
-		9. 返回内容
-	*/
 
-	// 按行进行分割
 	lines := strings.Split(fc, "\n")
 	if f.Verbose {
 		fmt.Printf("\n==Split:===\n%#v\n=======\n", lines)
@@ -388,7 +348,7 @@ func performIndentation(lines []string, blankSpace int) []string {
 	return newLines
 }
 
-// joinOpeningBracket 当 { 为单独一行的时候, 合并到上一行
+// joinOpeningBracket join brackets and collapse multi blank lines
 func joinOpeningBracket(lines []string) []string {
 	newLines := make([]string, 0, cap(lines))
 
@@ -416,7 +376,7 @@ func joinOpeningBracket(lines []string) []string {
 
 		lastLine = l
 	}
-	// 把最后一行加入进来
+	// the last line
 	newLines = append(newLines, lastLine)
 
 	return newLines
