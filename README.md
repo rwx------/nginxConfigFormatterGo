@@ -1,10 +1,10 @@
 # nginxConfigFormatterGo
 
-go for nginx configure file formatter, a better beautiful nginx config formatter.
+go for nginx configure file formatter, a better and elegant nginx config formatter.
 
 Inspired by <https://github.com/1connect/nginx-config-formatter.git>
 
-## Goals and Features
+## Features
 
 - predictable formatted result.
 - Comments on a separate line.
@@ -12,6 +12,8 @@ Inspired by <https://github.com/1connect/nginx-config-formatter.git>
 - curly braces placement follows Java convention.
 - all lines are indented in uniform manner, with the given number spaces level (default 4).
 - whitespaces are collapsed, except in comments and quotation marks.
+- fixed multi-lines decompose problem (fixed for python version of [nginx-config-formatter](https://github.com/1connect/nginx-config-formatter.git) .
+- fixed quotes (`"`, `'`) match problem (fixed for python version of [nginx-config-formatter](https://github.com/1connect/nginx-config-formatter.git) .
 
 ## Build Requirements
 

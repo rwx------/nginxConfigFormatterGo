@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unicode"
 
-	iconv "github.com/djimenez/iconv-go"
+	iconvgo "github.com/djimenez/iconv-go"
 	"github.com/urfave/cli"
 	"github.com/wxnacy/wgo/arrays"
 )
@@ -106,7 +106,7 @@ func (f *FormatArgs) formatConfigFile(configFilePath string) {
 	fc := readAll(configFilePath)
 	if f.Charset != "utf-8" {
 		// convert the content to utf-8
-		fcIconv, err := iconv.ConvertString(fc, f.Charset, "utf-8")
+		fcIconv, err := iconvgo.ConvertString(fc, f.Charset, "utf-8")
 		if err != nil {
 			s := fmt.Sprintf("You want convert the strings from %v to utf-8, but could not convert!", f.Charset)
 			errorMessage(s, false)
@@ -140,7 +140,7 @@ func (f *FormatArgs) formatConfigFile(configFilePath string) {
 	} else {
 		// change the charset back
 		if f.Charset != "utf-8" {
-			fcNew, _ = iconv.ConvertString(fcNew, "utf-8", f.Charset)
+			fcNew, _ = iconvgo.ConvertString(fcNew, "utf-8", f.Charset)
 		}
 
 		// formated content write into the file
