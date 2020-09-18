@@ -42,6 +42,18 @@ go build
 
 You can get download prebuild binary at [Release Page](https://github.com/rwx------/nginxConfigFormatterGo/releases).
 
+```shell
+# linux
+wget https://github.com/rwx------/nginxConfigFormatterGo/releases/download/v1.0.0/nginxConfigFormatterGo_linux_amd64 -O /usr/local/bin/nginxConfigFormatterGo
+
+chmod +x /usr/local/bin/nginxConfigFormatterGo
+
+# mac  
+wget https://github.com/rwx------/nginxConfigFormatterGo/releases/download/v1.0.0/nginxConfigFormatterGo_darwin_amd64  -O /usr/local/bin/nginxConfigFormatterGo
+
+chmod +x /usr/local/bin/nginxConfigFormatterGo
+```
+
 ## Usage
 
 ```code

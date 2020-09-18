@@ -3,7 +3,7 @@
 使用go语言开发的, 优雅的nginx配置文件格式化工具
 
 受 <https://github.com/1connect/nginx-config-formatter.git> 项目激发和鼓励  
-之前也有给该项目提交补丁, 限于python水平有限, 于是决定用go重新造一遍轮子.
+之前也有给该项目提交过补丁, 还是决定用go重新造一遍轮子.
 
 ## 特性
 
@@ -44,6 +44,18 @@ go build
 ### 3. 预编译好的二进制包
 
 你可以在 [发布页面](https://github.com/rwx------/nginxConfigFormatterGo/releases) 获取预编译的二进制包.
+
+```shell
+# linux
+wget https://github.com/rwx------/nginxConfigFormatterGo/releases/download/v1.0.0/nginxConfigFormatterGo_linux_amd64 -O /usr/local/bin/nginxConfigFormatterGo
+
+chmod +x /usr/local/bin/nginxConfigFormatterGo
+
+# mac  
+wget https://github.com/rwx------/nginxConfigFormatterGo/releases/download/v1.0.0/nginxConfigFormatterGo_darwin_amd64  -O /usr/local/bin/nginxConfigFormatterGo
+
+chmod +x /usr/local/bin/nginxConfigFormatterGo
+```
 
 ## 使用方法
 
